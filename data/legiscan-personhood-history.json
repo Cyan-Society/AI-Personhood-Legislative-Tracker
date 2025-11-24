@@ -1,6 +1,6 @@
 {
-  "last_run": "2025-11-24T13:34:45.900Z",
-  "query": "personhood",
+  "last_run": "2025-11-24T17:29:45.505Z",
+  "query": "personhood AND (\"artificial intelligence\" OR AI OR artificial OR computational OR digital)",
   "year": "2",
   "bills": {
     "1805895": {
@@ -12,18 +12,7 @@
       "last_action": "Introduced, Referred to Assembly State and Local Government Committee",
       "last_action_date": "2024-01-09",
       "url": "https://legiscan.com/NJ/bill/A1374/2024",
-      "relevance": 54
-    },
-    "1861454": {
-      "bill_id": 1861454,
-      "change_hash": "6451da13899332fda64b5240f97e6430",
-      "state": "NJ",
-      "bill_number": "AR122",
-      "title": "Condemns Alabama Supreme Court ruling in LePage v. Mobile Infirmary Clinic, P.C. and pending federal legislation, H.R.431; reaffirms freedom of access and protection of reproductive health care services in New Jersey, including IVF.",
-      "last_action": "Filed with Secretary of State",
-      "last_action_date": "2024-03-18",
-      "url": "https://legiscan.com/NJ/bill/AR122/2024",
-      "relevance": 89
+      "relevance": 22
     },
     "1892623": {
       "bill_id": 1892623,
@@ -34,7 +23,7 @@
       "last_action": "Died in House Committee at Sine Die adjournment.",
       "last_action_date": "2025-05-05",
       "url": "https://legiscan.com/AR/bill/HB1011/2025",
-      "relevance": 70
+      "relevance": 30
     },
     "1900966": {
       "bill_id": 1900966,
@@ -45,18 +34,7 @@
       "last_action": "Referred: Emerging Issues(H)",
       "last_action_date": "2025-05-15",
       "url": "https://legiscan.com/MO/bill/HB721/2025",
-      "relevance": 98
-    },
-    "1928694": {
-      "bill_id": 1928694,
-      "change_hash": "d74413d513701fb5b981c4e3f299204c",
-      "state": "CO",
-      "bill_number": "SJR004",
-      "title": "Reproductive Rights and Justice Day",
-      "last_action": "Signed by the Speaker of the House",
-      "last_action_date": "2025-01-28",
-      "url": "https://legiscan.com/CO/bill/SJR004/2025",
-      "relevance": 96
+      "relevance": 61
     },
     "1944028": {
       "bill_id": 1944028,
@@ -67,7 +45,7 @@
       "last_action": "Referred to Committee on Judiciary",
       "last_action_date": "2025-01-28",
       "url": "https://legiscan.com/SC/bill/H3796/2025",
-      "relevance": 99
+      "relevance": 61
     },
     "1952329": {
       "bill_id": 1952329,
@@ -78,7 +56,7 @@
       "last_action": "By resolution, returned to House Rules Committee for third reading.",
       "last_action_date": "2025-04-27",
       "url": "https://legiscan.com/WA/bill/HB1833/2025",
-      "relevance": 92
+      "relevance": 73
     },
     "1954311": {
       "bill_id": 1954311,
@@ -89,7 +67,7 @@
       "last_action": "Assigned to General Subcommittee of Senate Judiciary Committee",
       "last_action_date": "2025-03-24",
       "url": "https://legiscan.com/TN/bill/SB0837/2025",
-      "relevance": 91
+      "relevance": 71
     },
     "1954702": {
       "bill_id": 1954702,
@@ -100,7 +78,7 @@
       "last_action": "Assigned to s/c Civil Justice Subcommittee",
       "last_action_date": "2025-02-10",
       "url": "https://legiscan.com/TN/bill/HB0849/2025",
-      "relevance": 91
+      "relevance": 71
     },
     "1964254": {
       "bill_id": 1964254,
@@ -111,29 +89,7 @@
       "last_action": "First reading, referred to Technology, Economic Development, & Veterans.",
       "last_action_date": "2025-02-11",
       "url": "https://legiscan.com/WA/bill/HB1942/2025",
-      "relevance": 88
-    },
-    "1964778": {
-      "bill_id": 1964778,
-      "change_hash": "934e189fcedf419edfe515c4bff0fdc1",
-      "state": "TN",
-      "bill_number": "HJR0199",
-      "title": "A RESOLUTION to honor and congratulate Lindsay Whitted on her selection as the 2024-2025 Sevier County School System Grades PreK-4 Teacher of the Year.",
-      "last_action": "Signed by Governor.",
-      "last_action_date": "2025-02-27",
-      "url": "https://legiscan.com/TN/bill/HJR0199/2025",
-      "relevance": 88
-    },
-    "1964972": {
-      "bill_id": 1964972,
-      "change_hash": "79eb381f158f966a8e21380f36f3f122",
-      "state": "TN",
-      "bill_number": "HJR0200",
-      "title": "A RESOLUTION to honor and congratulate Misti DeGroot on her selection as the 2024-2025 Sevier County School System Grades 5-8 Teacher of the Year.",
-      "last_action": "Signed by Governor.",
-      "last_action_date": "2025-02-27",
-      "url": "https://legiscan.com/TN/bill/HJR0200/2025",
-      "relevance": 88
+      "relevance": 71
     },
     "1973003": {
       "bill_id": 1973003,
@@ -144,18 +100,7 @@
       "last_action": "In committee upon adjournment.",
       "last_action_date": "2025-06-27",
       "url": "https://legiscan.com/OR/bill/HB3592/2025",
-      "relevance": 95
-    },
-    "1977102": {
-      "bill_id": 1977102,
-      "change_hash": "9e1ce6828aaa78489dcb0b9bd99d1b86",
-      "state": "WV",
-      "bill_number": "HCR58",
-      "title": "Expressing the postition of the House of Delegates of West Virginia that unborn children are legal and constitutional persons entitled to the equal protection of the laws",
-      "last_action": "To House Judiciary",
-      "last_action_date": "2025-02-20",
-      "url": "https://legiscan.com/WV/bill/HCR58/2025",
-      "relevance": 94
+      "relevance": 83
     },
     "1983834": {
       "bill_id": 1983834,
@@ -166,7 +111,7 @@
       "last_action": "Referred: Emerging Issues(H)",
       "last_action_date": "2025-05-15",
       "url": "https://legiscan.com/MO/bill/HB1462/2025",
-      "relevance": 94
+      "relevance": 97
     },
     "1985707": {
       "bill_id": 1985707,
@@ -177,7 +122,7 @@
       "last_action": "First reading, referred to Civil Rights & Judiciary.",
       "last_action_date": "2025-02-27",
       "url": "https://legiscan.com/WA/bill/HB2029/2025",
-      "relevance": 98
+      "relevance": 61
     },
     "1991353": {
       "bill_id": 1991353,
@@ -188,40 +133,7 @@
       "last_action": "Reported Printed; Filed in the Office of the Chief Clerk",
       "last_action_date": "2025-03-05",
       "url": "https://legiscan.com/ID/bill/H0367/2025",
-      "relevance": 100
-    },
-    "2024736": {
-      "bill_id": 2024736,
-      "change_hash": "7f18d59dcc3fb19309fa32548f61c1ad",
-      "state": "OH",
-      "bill_number": "SR93",
-      "title": "Support amendment: abolish corporate personhood, money as speech",
-      "last_action": "Referred to committee: Government Oversight and Reform",
-      "last_action_date": "2025-04-09",
-      "url": "https://legiscan.com/OH/bill/SR93/2025",
-      "relevance": 98
-    },
-    "2024786": {
-      "bill_id": 2024786,
-      "change_hash": "820886a01826b0c014c4e140ec6556fe",
-      "state": "OH",
-      "bill_number": "HB237",
-      "title": "Protect assisted reproduction care",
-      "last_action": "Referred to committee: Health",
-      "last_action_date": "2025-04-30",
-      "url": "https://legiscan.com/OH/bill/HB237/2025",
-      "relevance": 86
-    },
-    "2044471": {
-      "bill_id": 2044471,
-      "change_hash": "5767207af3511b3f8b4928c4ae22fe07",
-      "state": "OH",
-      "bill_number": "HR211",
-      "title": "Support CA to abolish corporate personhood, money as speech",
-      "last_action": "Introduced and Referred to Committee: General Government",
-      "last_action_date": "2025-09-15",
-      "url": "https://legiscan.com/OH/bill/HR211/2025",
-      "relevance": 98
+      "relevance": 39
     },
     "2044900": {
       "bill_id": 2044900,
@@ -232,7 +144,7 @@
       "last_action": "Referred to committee: Technology and Innovation",
       "last_action_date": "2025-10-01",
       "url": "https://legiscan.com/OH/bill/HB469/2025",
-      "relevance": 97
+      "relevance": 100
     }
   }
 }

@@ -1,0 +1,99 @@
+{
+  "started_at": "2025-11-24T17:27:05.337Z",
+  "query": "personhood AND (\"artificial intelligence\" OR AI OR artificial OR computational OR digital)",
+  "model": "gemini-2.5-pro",
+  "force_review": true,
+  "search_total": 13,
+  "changed_considered": 13,
+  "applied_count": 6,
+  "skipped_count": 7,
+  "error_count": 0,
+  "applied_updates": [
+    {
+      "state": "OH",
+      "bill_number": "HB469",
+      "category": "PENDING_LEGISLATION",
+      "summary": "An Ohio bill to declare AI systems nonsentient and prohibit them from obtaining legal personhood.",
+      "source": "https://legiscan.com/OH/bill/HB469/2025",
+      "citation": "https://www.legislature.ohio.gov/legislation/136/hb469"
+    },
+    {
+      "state": "MO",
+      "bill_number": "HB1462",
+      "category": "PENDING_LEGISLATION",
+      "summary": "This Missouri bill seeks to legally establish that artificial intelligence is not sentient and to create a framework for its responsible use.",
+      "source": "https://legiscan.com/MO/bill/HB1462/2025",
+      "citation": "https://house.mo.gov/Bill.aspx?bill=HB1462&year=2025&code=R"
+    },
+    {
+      "state": "TN",
+      "bill_number": "HB0849",
+      "category": "PENDING_LEGISLATION",
+      "summary": "This bill seeks to amend state law to explicitly exclude artificial intelligence from the legal definitions of 'person' and 'natural person'.",
+      "source": "https://legiscan.com/TN/bill/HB0849/2025",
+      "citation": "https://wapp.capitol.tn.gov/apps/Billinfo/default.aspx?BillNumber=HB0849&ga=114"
+    },
+    {
+      "state": "TN",
+      "bill_number": "SB0837",
+      "category": "PENDING_LEGISLATION",
+      "summary": "This Tennessee bill proposes to amend state law to explicitly exclude artificial intelligence from the legal definitions of 'person,' 'life,' and 'natural person'.",
+      "source": "https://legiscan.com/TN/bill/SB0837/2025",
+      "citation": "https://wapp.capitol.tn.gov/apps/Billinfo/default.aspx?BillNumber=SB0837&ga=114"
+    },
+    {
+      "state": "SC",
+      "bill_number": "H3796",
+      "category": "PENDING_LEGISLATION",
+      "summary": "This bill prohibits South Carolina governmental entities from granting or recognizing legal personhood for certain non-human items, including potentially AI.",
+      "source": "https://legiscan.com/SC/bill/H3796/2025",
+      "citation": "https://www.scstatehouse.gov/billsearch.php?billnumbers=3796&session=126&summary=B"
+    },
+    {
+      "state": "MO",
+      "bill_number": "HB721",
+      "category": "PENDING_LEGISLATION",
+      "summary": "A proposed Missouri law would prohibit governmental entities from granting legal personhood to various non-human objects.",
+      "source": "https://legiscan.com/MO/bill/HB721/2025",
+      "citation": "https://house.mo.gov/Bill.aspx?bill=HB721&year=2025&code=R"
+    }
+  ],
+  "skipped": [
+    {
+      "state": "OR",
+      "bill_number": "HB3592",
+      "reason": "The bill creates a governmental body to study and advise on AI policy but does not address the legal personhood, rights, or sentience of AI."
+    },
+    {
+      "state": "WA",
+      "bill_number": "HB1833",
+      "reason": "The bill's focus is on funding and promotion, not the legal status, rights, or personhood of AI."
+    },
+    {
+      "state": "WA",
+      "bill_number": "HB1942",
+      "reason": "The bill focuses on economic development and promotion of AI, not on legal personhood, rights, or sentience."
+    },
+    {
+      "state": "WA",
+      "bill_number": "HB2029",
+      "reason": "The bill's generic title is characteristic of biological personhood legislation and lacks any mention of AI, making it irrelevant to this tracker."
+    },
+    {
+      "state": "ID",
+      "bill_number": "H0367",
+      "reason": "The bill explicitly addresses 'human personhood,' which relates to biological/abortion issues, not artificial intelligence."
+    },
+    {
+      "state": "AR",
+      "bill_number": "HB1011",
+      "reason": "The bill concerns abortion rights and biological personhood, not artificial intelligence."
+    },
+    {
+      "state": "NJ",
+      "bill_number": "A1374",
+      "reason": "The bill concerns terminology for human immigration, not artificial intelligence."
+    }
+  ],
+  "errors": []
+}

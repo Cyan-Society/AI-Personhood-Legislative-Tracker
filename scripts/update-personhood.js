@@ -16,6 +16,22 @@
 const fs = require("fs");
 const path = require("path");
 
+// Lightweight .env loader (avoids external deps)
+(function loadDotenv() {
+  const envPath = path.resolve(__dirname, "..", ".env");
+  if (!fs.existsSync(envPath)) return;
+  const lines = fs.readFileSync(envPath, "utf8").split(/\r?\n/);
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) return;
+    const eq = trimmed.indexOf("=");
+    if (eq === -1) return;
+    const key = trimmed.slice(0, eq).trim();
+    const val = trimmed.slice(eq + 1).trim();
+    if (key && !process.env[key]) process.env[key] = val;
+  });
+})();
+
 const LEGISCAN_API_KEY = process.env.LEGISCAN_API_KEY || process.env.LEGISCAN_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 const FORCE_REVIEW = ["1", "true", "yes"].includes(String(process.env.FORCE_REVIEW || "").toLowerCase());
@@ -25,6 +41,8 @@ const GEMINI_BASE = process.env.GEMINI_API_BASE || "https://generativelanguage.g
 const DATA_DIR = path.resolve(__dirname, "..", "data");
 const STATE_DATA_PATH = path.join(DATA_DIR, "state-legislation.json");
 const HISTORY_PATH = path.join(DATA_DIR, "legiscan-personhood-history.json");
+const RUN_REPORT_JSON = path.join(DATA_DIR, "run-report.json");
+const RUN_REPORT_MD = path.join(DATA_DIR, "run-report.md");
 
 const PERSONHOOD_QUERY = 'personhood AND ("artificial intelligence" OR AI OR artificial OR computational OR digital)';
 const SEARCH_YEAR = "2"; // LegiScan: 1=all, 2=current year, 3=recent, 4=prior
@@ -237,6 +255,11 @@ async function classifyWithGemini(bill) {
   };
 }
 
+function deriveCitation(detail) {
+  const candidates = [detail.state_link, detail.text_url, detail.url];
+  return candidates.find(Boolean) || "";
+}
+
 function extractJson(text) {
   const cleaned = text.replace(/```[a-zA-Z]*\n?/g, "").replace(/```/g, "").trim();
   const match = cleaned.match(/\{[\s\S]*\}/);
@@ -259,7 +282,8 @@ function mergeStateData(previous, updates) {
       next[geoId] = {
         category: item.category,
         summary: item.summary,
-        source: item.source
+        source: item.source,
+        citation: item.citation || item.source
       };
     }
   });
@@ -274,19 +298,82 @@ function mergeStateData(previous, updates) {
   return sorted;
 }
 
+function saveRunReport(report) {
+  saveJson(RUN_REPORT_JSON, report);
+
+  const lines = [];
+  lines.push(`# Weekly AI Personhood Run Report`);
+  lines.push(`- Run started: ${report.started_at}`);
+  lines.push(`- Query: ${report.query}`);
+  lines.push(`- Model: ${report.model}`);
+  lines.push(`- Force review: ${report.force_review}`);
+  lines.push(`- Total results: ${report.search_total}`);
+  lines.push(`- Considered (after history): ${report.changed_considered}`);
+  lines.push(`- Applied: ${report.applied_count}`);
+  lines.push(`- Skipped: ${report.skipped_count}`);
+  lines.push(`- Errors: ${report.error_count}`);
+
+  lines.push(`\n## Applied updates`);
+  if (!report.applied_updates.length) {
+    lines.push(`- None`);
+  } else {
+    report.applied_updates.forEach((item) => {
+      const cite = item.citation ? ` | ${item.citation}` : "";
+      lines.push(`- ${item.state} ${item.bill_number} → ${item.category}: ${item.summary} (${item.source}${cite})`);
+    });
+  }
+
+  lines.push(`\n## Skipped (not AI-personhood)`);
+  if (!report.skipped.length) {
+    lines.push(`- None`);
+  } else {
+    report.skipped.forEach((item) => {
+      lines.push(`- ${item.state} ${item.bill_number}: ${item.reason}`);
+    });
+  }
+
+  lines.push(`\n## Errors`);
+  if (!report.errors.length) {
+    lines.push(`- None`);
+  } else {
+    report.errors.forEach((item) => {
+      lines.push(`- ${item.bill_id || "unknown"}: ${item.message}`);
+    });
+  }
+
+  fs.writeFileSync(RUN_REPORT_MD, `${lines.join("\n")}\n`, "utf8");
+}
+
 async function main() {
   requireEnvVars();
+  const report = {
+    started_at: new Date().toISOString(),
+    query: PERSONHOOD_QUERY,
+    model: GEMINI_MODEL,
+    force_review: FORCE_REVIEW,
+    search_total: 0,
+    changed_considered: 0,
+    applied_count: 0,
+    skipped_count: 0,
+    error_count: 0,
+    applied_updates: [],
+    skipped: [],
+    errors: []
+  };
   const previousHistory = loadJson(HISTORY_PATH, {});
   const previousMap = toHistoryMap(previousHistory);
   const stateData = loadJson(STATE_DATA_PATH, {});
 
   console.log("Pulling LegiScan search results...");
   const searchResults = await getLegiscanSearchResults();
+  report.search_total = searchResults.length;
   console.log(`Found ${searchResults.length} results for "${PERSONHOOD_QUERY}".`);
 
   const changed = FORCE_REVIEW ? searchResults : diffResults(searchResults, previousMap);
+  report.changed_considered = changed.length;
   if (!changed.length) {
     console.log("No new or changed results since last run.");
+    saveRunReport(report);
     return;
   }
 
@@ -299,6 +386,11 @@ async function main() {
       const decision = await classifyWithGemini(detail);
       if (!decision.relevant) {
         console.log(`Skipping ${detail.state} ${detail.bill_number}: not AI-personhood (${decision.reason})`);
+        report.skipped.push({
+          state: detail.state,
+          bill_number: detail.bill_number,
+          reason: decision.reason || "not relevant"
+        });
         continue;
       }
 
@@ -306,16 +398,29 @@ async function main() {
         decision.summary ||
         `${detail.bill_number} (${detail.status_date?.slice(0, 4) || "Unknown"}): ${detail.title}`;
 
+      const citation = deriveCitation(detail);
+
       updates.push({
         state: detail.state,
         category: decision.category,
         summary: summaryText,
-        source: detail.url
+        source: detail.url,
+        citation
+      });
+
+      report.applied_updates.push({
+        state: detail.state,
+        bill_number: detail.bill_number,
+        category: decision.category,
+        summary: summaryText,
+        source: detail.url,
+        citation
       });
 
       console.log(`Queued ${detail.state} ${detail.bill_number} -> ${decision.category}`);
     } catch (err) {
       console.error(`Failed to process bill ${bill.bill_id}:`, err.message);
+      report.errors.push({ bill_id: bill.bill_id, message: err.message });
     }
   }
 
@@ -326,6 +431,11 @@ async function main() {
     saveJson(STATE_DATA_PATH, merged);
     console.log(`Updated ${STATE_DATA_PATH}`);
   }
+
+  report.applied_count = report.applied_updates.length;
+  report.skipped_count = report.skipped.length;
+  report.error_count = report.errors.length;
+  saveRunReport(report);
 
   const historyPayload = {
     last_run: new Date().toISOString(),

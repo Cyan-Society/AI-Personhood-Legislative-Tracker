@@ -52,6 +52,14 @@
     
     <!-- The div that will hold the map --><div id="chartdiv"></div>
 
+    <!-- Info panel for clickable source link -->
+    <div class="mt-6 p-4 bg-gray-50 border border-gray-200 rounded text-gray-700" id="info-panel">
+      <div class="text-lg font-semibold text-gray-800" id="info-name">Click a state</div>
+      <div id="info-category">Status: —</div>
+      <div class="mt-1" id="info-summary">Summary will appear here.</div>
+      <div class="mt-1" id="info-source">Source: —</div>
+    </div>
+
     <!-- New, Manually Created HTML Legend --><div class="mt-6 px-4">
       <h3 class="text-lg font-semibold text-center text-gray-700 mb-4">Legend</h3>
       <div class="flex flex-wrap justify-center gap-x-6 gap-y-3 max-w-4xl mx-auto">
@@ -207,12 +215,16 @@
 
           let categoryKey = data && categories[data.category] ? data.category : "NO_SPECIFIC_ACTION";
           let category = categories[categoryKey];
+          let citation = data && (data.citation || data.source) ? (data.citation || data.source) : "Report";
+          let sourceUrl = citation && citation.startsWith("http") ? citation : "";
 
           polygons.push({
             id: stateId,
             name: stateName,
             category: category.description,
             summary: data ? data.summary : "No specific state-level action mentioned in the 2025 report.",
+            source: citation,
+            sourceUrl: sourceUrl,
             color: category.color
           });
         }
@@ -232,12 +244,47 @@
       // Set the tooltip text.
       // {name} is the state name (from geodata)
       // {category} and {summary} are from our custom data array
-      polygonTemplate.tooltipText = "[bold]{name}[/]\n[font-size: 90%]Status: {category}\nDetails: {summary}[/]";
+      // If sourceUrl is present, show as hyperlink; otherwise plain text.
+      polygonTemplate.tooltipHTML = "<strong>{name}</strong><br><span style='font-size: 90%'>Status: {category}<br>Details: {summary}<br>Source: {sourceUrl}<br></span>";
+
+      polygonTemplate.adapter.add("tooltipHTML", function(html, target) {
+        var data = target.dataItem ? target.dataItem.dataContext : {};
+        if (data.sourceUrl) {
+          return "<strong>" + data.name + "</strong><br><span style='font-size: 90%'>Status: " + data.category + "<br>Details: " + data.summary + "<br>Source: <a href='" + data.sourceUrl + "' target='_blank' rel='noopener noreferrer'>" + data.sourceUrl + "</a></span>";
+        }
+        // If there is no URL, omit the source line to avoid repeated 'Report' text.
+        return "<strong>" + data.name + "</strong><br><span style='font-size: 90%'>Status: " + data.category + "<br>Details: " + data.summary + "</span>";
+      });
       
       // --- Configure tooltip wrapping on the SERIES ---
       polygonSeries.tooltip.label.wrap = true;
       polygonSeries.tooltip.label.maxWidth = 300;
       // --- End of new code ---
+
+      // Click to pin details (with clickable link) in the info panel under the map
+      var infoName = document.getElementById("info-name");
+      var infoCategory = document.getElementById("info-category");
+      var infoSummary = document.getElementById("info-summary");
+      var infoSource = document.getElementById("info-source");
+
+      function updateInfoPanel(data) {
+        if (!data) return;
+        infoName.textContent = data.name || "Unknown state";
+        infoCategory.textContent = "Status: " + (data.category || "—");
+        infoSummary.textContent = data.summary || "";
+
+        if (data.sourceUrl) {
+          infoSource.innerHTML = 'Source: <a class="text-blue-600 underline" href="' + data.sourceUrl + '" target="_blank" rel="noopener noreferrer">' + data.sourceUrl + "</a>";
+        } else if (data.source) {
+          infoSource.textContent = "Source: " + data.source;
+        } else {
+          infoSource.textContent = "Source: —";
+        }
+      }
+
+      polygonTemplate.events.on("hit", function(ev) {
+        updateInfoPanel(ev.target.dataItem.dataContext);
+      });
 
       // Set the default fill color
       polygonTemplate.fill = defaultFill;

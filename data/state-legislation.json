@@ -2,61 +2,79 @@
   "US-AR": {
     "category": "FUNCTIONAL_REGULATION",
     "summary": "Act 1060 (Enacted 2025): Clarifies that the owner of AI-generated content is the person providing the input or their employer, not the AI itself.",
-    "source": "2025 report"
+    "source": "2025 report",
+    "citation": "2025 report"
   },
   "US-CA": {
     "category": "NO_SPECIFIC_ACTION",
     "summary": "No specific state-level action mentioned in the 2025 report.",
-    "source": "2025 report"
+    "source": "2025 report",
+    "citation": "2025 report"
   },
   "US-CO": {
     "category": "NO_SPECIFIC_ACTION",
     "summary": "No specific state-level action mentioned in the 2025 report.",
-    "source": "2025 report"
+    "source": "2025 report",
+    "citation": "2025 report"
   },
   "US-ID": {
     "category": "ENACTED_ANTI_PERSONHOOD",
     "summary": "I.C. § 5-346 (Enacted 2022): Prohibits the granting of personhood to 'artificial intelligence,' grouping it with nonhuman animals and inanimate objects.",
-    "source": "2025 report"
+    "source": "2025 report",
+    "citation": "2025 report"
   },
   "US-KY": {
     "category": "FAILED_ATTEMPTS",
     "summary": "H.B. 352 (Failed 2024): Would have revised the definition of 'person' in civil actions to explicitly exclude AI.",
-    "source": "2025 report"
+    "source": "2025 report",
+    "citation": "2025 report"
   },
   "US-MO": {
     "category": "PENDING_LEGISLATION",
-    "summary": "This bill establishes the \"AI Non-Sentience and Responsibility Act\" in Missouri, explicitly denying sentience to artificial intelligence.",
-    "source": "https://legiscan.com/MO/bill/HB1462/2025"
+    "summary": "A proposed Missouri law would prohibit governmental entities from granting legal personhood to various non-human objects.",
+    "source": "https://legiscan.com/MO/bill/HB721/2025",
+    "citation": "https://house.mo.gov/Bill.aspx?bill=HB721&year=2025&code=R"
   },
   "US-OH": {
     "category": "PENDING_LEGISLATION",
-    "summary": "This bill seeks to declare artificial intelligence systems nonsentient and prohibit them from obtaining legal personhood in Ohio.",
-    "source": "https://legiscan.com/OH/bill/HB469/2025"
+    "summary": "An Ohio bill to declare AI systems nonsentient and prohibit them from obtaining legal personhood.",
+    "source": "https://legiscan.com/OH/bill/HB469/2025",
+    "citation": "https://www.legislature.ohio.gov/legislation/136/hb469"
   },
   "US-OR": {
     "category": "FUNCTIONAL_REGULATION",
     "summary": "H.B. 2748 (Enacted 2025): Prohibits a 'nonhuman entity' (including AI) from using protected, licensed medical titles such as 'Registered nurse' or 'Nurse practitioner.'",
-    "source": "2025 report"
+    "source": "2025 report",
+    "citation": "2025 report"
+  },
+  "US-SC": {
+    "category": "PENDING_LEGISLATION",
+    "summary": "This bill prohibits South Carolina governmental entities from granting or recognizing legal personhood for certain non-human items, including potentially AI.",
+    "source": "https://legiscan.com/SC/bill/H3796/2025",
+    "citation": "https://www.scstatehouse.gov/billsearch.php?billnumbers=3796&session=126&summary=B"
   },
   "US-TN": {
     "category": "PENDING_LEGISLATION",
-    "summary": "This bill defines 'human being,' 'life,' and 'natural person' for statutory construction and explicitly excludes artificial intelligence and machines from these definitions.",
-    "source": "https://legiscan.com/TN/bill/SB0837/2025"
+    "summary": "This Tennessee bill proposes to amend state law to explicitly exclude artificial intelligence from the legal definitions of 'person,' 'life,' and 'natural person'.",
+    "source": "https://legiscan.com/TN/bill/SB0837/2025",
+    "citation": "https://wapp.capitol.tn.gov/apps/Billinfo/default.aspx?BillNumber=SB0837&ga=114"
   },
   "US-TX": {
     "category": "NO_SPECIFIC_ACTION",
     "summary": "No specific state-level action mentioned in the 2025 report.",
-    "source": "2025 report"
+    "source": "2025 report",
+    "citation": "2025 report"
   },
   "US-UT": {
     "category": "ENACTED_ANTI_PERSONHOOD",
     "summary": "H.B. 249 (Enacted 2024): Explicitly prohibits any governmental entity from granting or recognizing legal personhood in 'artificial intelligence.'",
-    "source": "2025 report"
+    "source": "2025 report",
+    "citation": "2025 report"
   },
   "US-WA": {
     "category": "FAILED_ATTEMPTS",
     "summary": "H.B. 2029 (Failed 2025): Attempted to prohibit governmental entities from granting legal personhood to AI, similar to the Utah/Idaho model.",
-    "source": "2025 report"
+    "source": "2025 report",
+    "citation": "2025 report"
   }
 }
