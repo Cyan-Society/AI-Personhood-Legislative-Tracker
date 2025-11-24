@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Personhood Regulations - USA</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Tailwind CSS for styling the page --><script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+        },
+      },
+    }
+  </script>
+  
+  <!-- amCharts 4 Core --><script src="https://cdn.amcharts.com/lib/4/core.js"></script>
+  <script src="https://cdn.amcharts.com/lib/4/maps.js"></script>
+  
+  <!-- Geodata for USA Map --><script src="https://cdn.amcharts.com/lib/4/geodata/usaLow.js"></script>
+  
+  <!-- amCharts 4 Themes --><script src="https://cdn.amcharts.com/lib/4/themes/animated.js"></script>
+
+  <style>
+    /* Set the chart container to take up a significant portion of the screen */
+    #chartdiv {
+      width: 100%;
+      height: 70vh; /* 70% of the viewport height (reduced from 75) */
+      min-height: 550px; /* Minimum height for smaller screens */
+      background-color: #f9f9f9; /* Light grey background for the chart area */
+      border-radius: 0.5rem; /* Rounded corners */
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 p-4 md:p-8">
+
+  <div class="max-w-7xl mx-auto bg-white p-6 rounded-lg shadow-xl">
+    <h1 class="text-3xl font-bold text-center text-gray-800 mb-4">
+      AI Personhood & Governance Laws in the United States (2025)
+    </h1>
+    <p class="text-center text-gray-600 mb-8">
+      Hover over a state to see detailed regulatory information based on the 2025 report.
+    </p>
+    
+    <!-- The div that will hold the map --><div id="chartdiv"></div>
+
+    <!-- New, Manually Created HTML Legend --><div class="mt-6 px-4">
+      <h3 class="text-lg font-semibold text-center text-gray-700 mb-4">Legend</h3>
+      <div class="flex flex-wrap justify-center gap-x-6 gap-y-3 max-w-4xl mx-auto">
+        
+        <div class="flex items-center">
+          <span class="w-4 h-4 rounded border border-gray-400 mr-2" style="background-color: #B71C1C;"></span>
+          <span class="text-sm text-gray-600">Enacted anti-personhood laws</span>
+        </div>
+        
+        <div class="flex items-center">
+          <span class="w-4 h-4 rounded border border-gray-400 mr-2" style="background-color: #1A237E;"></span>
+          <span class="text-sm text-gray-600">Functional regulation (Enacted)</span>
+        </div>
+        
+        <div class="flex items-center">
+          <span class="w-4 h-4 rounded border border-gray-400 mr-2" style="background-color: #E65100;"></span>
+          <span class="text-sm text-gray-600">Pending legislation</span>
+        </div>
+        
+        <div class="flex items-center">
+          <span class="w-4 h-4 rounded border border-gray-400 mr-2" style="background-color: #F9A825;"></span>
+          <span class="text-sm text-gray-600">Failed attempts</span>
+        </div>
+
+        <div class="flex items-center">
+          <span class="w-4 h-4 rounded border border-gray-400 mr-2" style="background-color: #E0E0E0;"></span>
+          <span class="text-sm text-gray-600">No specific action in report</span>
+        </div>
+
+      </div>
+    </div>
+    <!-- End of New Legend --></div>
+
+  <script>
+    // This code will run after the amCharts libraries are loaded
+      am4core.ready(function() {
+
+      // Themes begin
+      am4core.useTheme(am4themes_animated);
+      // Themes end
+
+      // Create map instance
+      var chart = am4core.create("chartdiv", am4maps.MapChart);
+
+      // Set map definition
+      chart.geodata = am4geodata_usaLow;
+
+      // Set projection
+      chart.projection = new am4maps.projections.AlbersUsa();
+
+      // Create map polygon series
+      var polygonSeries = chart.series.push(new am4maps.MapPolygonSeries());
+
+      // Make map load polygon data (state shapes and names) from GeoJSON
+      polygonSeries.useGeodata = true;
+
+      // --- Data Preparation ---
+      const categories = {
+        ENACTED_ANTI_PERSONHOOD: {
+          color: am4core.color("#B71C1C"), // Dark Red
+          label: "Enacted anti-personhood laws",
+          description: "Enacted anti-personhood laws"
+        },
+        FUNCTIONAL_REGULATION: {
+          color: am4core.color("#1A237E"), // Dark Blue
+          label: "Functional regulation (Enacted)",
+          description: "Functional regulation (Enacted)"
+        },
+        PENDING_LEGISLATION: {
+          color: am4core.color("#E65100"), // Dark Orange
+          label: "Pending legislation",
+          description: "Pending legislation"
+        },
+        FAILED_ATTEMPTS: {
+          color: am4core.color("#F9A825"), // Yellow/Orange
+          label: "Failed attempts",
+          description: "Failed attempts"
+        },
+        NO_SPECIFIC_ACTION: {
+          color: am4core.color("#E0E0E0"), // Light Grey
+          label: "No specific action in report",
+          description: "No specific action in report"
+        }
+      };
+      const defaultFill = categories.NO_SPECIFIC_ACTION.color;
+
+      // Inline fallback data (used if fetch fails)
+      const fallbackStateData = {
+        "US-UT": {
+          category: "ENACTED_ANTI_PERSONHOOD",
+          summary: "H.B. 249 (Enacted 2024): Explicitly prohibits any governmental entity from granting or recognizing legal personhood in 'artificial intelligence.'"
+        },
+        "US-ID": {
+          category: "ENACTED_ANTI_PERSONHOOD",
+          summary: "I.C. § 5-346 (Enacted 2022): Prohibits the granting of personhood to 'artificial intelligence,' grouping it with nonhuman animals and inanimate objects."
+        },
+        "US-OH": {
+          category: "PENDING_LEGISLATION",
+          summary: "H.B. 469 (Pending 2025): Seeks to declare AI 'non-sentient' and prohibit it from being granted personhood, marrying, owning property, or holding corporate roles."
+        },
+        "US-MO": {
+          category: "FAILED_ATTEMPTS",
+          summary: "H.B. 1462 (Failed 2025): 'AI Non-Sentience and Responsibility Act' would have excluded AI from the definition of 'person' and assigned all liability to human owners or developers."
+        },
+        "US-WA": {
+          category: "FAILED_ATTEMPTS",
+          summary: "H.B. 2029 (Failed 2025): Attempted to prohibit governmental entities from granting legal personhood to AI, similar to the Utah/Idaho model."
+        },
+        "US-KY": {
+          category: "FAILED_ATTEMPTS",
+          summary: "H.B. 352 (Failed 2024): Would have revised the definition of 'person' in civil actions to explicitly exclude AI."
+        },
+        "US-OR": {
+          category: "FUNCTIONAL_REGULATION",
+          summary: "H.B. 2748 (Enacted 2025): Prohibits a 'nonhuman entity' (including AI) from using protected, licensed medical titles such as 'Registered nurse' or 'Nurse practitioner.'"
+        },
+        "US-AR": {
+          category: "FUNCTIONAL_REGULATION",
+          summary: "Act 1060 (Enacted 2025): Clarifies that the owner of AI-generated content is the person providing the input or their employer, not the AI itself."
+        },
+        "US-CA": {
+          category: "NO_SPECIFIC_ACTION",
+          summary: "No specific state-level action mentioned in the 2025 report."
+        },
+        "US-CO": {
+          category: "NO_SPECIFIC_ACTION",
+          summary: "No specific state-level action mentioned in the 2025 report."
+        },
+        "US-TX": {
+          category: "NO_SPECIFIC_ACTION",
+          summary: "No specific state-level action mentioned in the 2025 report."
+        }
+      };
+
+      async function loadStateData() {
+        try {
+          const response = await fetch("data/state-legislation.json", { cache: "no-cache" });
+          if (!response.ok) throw new Error("Failed to fetch state data");
+          return await response.json();
+        } catch (err) {
+          console.warn("Using fallback state data", err);
+          return fallbackStateData;
+        }
+      }
+
+      function buildPolygonData(stateData) {
+        const polygons = [];
+        for (var id in am4geodata_usaLow.features) {
+          let feature = am4geodata_usaLow.features[id];
+          let stateId = feature.properties.id;
+          let stateName = feature.properties.name;
+          let data = stateData[stateId];
+
+          let categoryKey = data && categories[data.category] ? data.category : "NO_SPECIFIC_ACTION";
+          let category = categories[categoryKey];
+
+          polygons.push({
+            id: stateId,
+            name: stateName,
+            category: category.description,
+            summary: data ? data.summary : "No specific state-level action mentioned in the 2025 report.",
+            color: category.color
+          });
+        }
+        return polygons;
+      }
+
+      // Assign data to polygon series (fetch-first, fallback to inline data)
+      loadStateData().then(function(stateData) {
+        polygonSeries.data = buildPolygonData(stateData);
+      });
+
+      // --- Polygon and Tooltip Configuration ---
+
+      // Configure series
+      var polygonTemplate = polygonSeries.mapPolygons.template;
+
+      // Set the tooltip text.
+      // {name} is the state name (from geodata)
+      // {category} and {summary} are from our custom data array
+      polygonTemplate.tooltipText = "[bold]{name}[/]\n[font-size: 90%]Status: {category}\nDetails: {summary}[/]";
+      
+      // --- Configure tooltip wrapping on the SERIES ---
+      polygonSeries.tooltip.label.wrap = true;
+      polygonSeries.tooltip.label.maxWidth = 300;
+      // --- End of new code ---
+
+      // Set the default fill color
+      polygonTemplate.fill = defaultFill;
+      
+      // Bind the 'fill' property to our 'color' field in the data
+      polygonTemplate.propertyFields.fill = "color";
+
+      // Add a stroke (border) to the states
+      polygonTemplate.stroke = am4core.color("#ffffff");
+      polygonTemplate.strokeWidth = 0.5;
+      polygonTemplate.nonScalingStroke = true;
+
+      // Create hover state
+      var hs = polygonTemplate.states.create("hover");
+      // On hover, we slightly darken the state's fill color
+      hs.properties.fill = am4core.color("#757575");
+
+      // --- Zoom controls ---
+      chart.zoomControl = new am4maps.ZoomControl();
+      chart.zoomControl.align = "left";
+      chart.zoomControl.valign = "top";
+      chart.zoomControl.dx = 10;
+      chart.zoomControl.dy = 10;
+      chart.zoomControl.layout = "vertical";
+
+    }); // end am4core.ready()
+  </script>
+
+</body>
+</html>
