@@ -44,7 +44,27 @@ const HISTORY_PATH = path.join(DATA_DIR, "legiscan-personhood-history.json");
 const RUN_REPORT_JSON = path.join(DATA_DIR, "run-report.json");
 const RUN_REPORT_MD = path.join(DATA_DIR, "run-report.md");
 
-const PERSONHOOD_QUERY = 'personhood AND ("artificial intelligence" OR AI OR artificial OR computational OR digital)';
+// TIER 1 Combined Query: Captures explicit AI personhood AND implicit "nonhuman" professional restrictions.
+// Source: Internal Analysis / Oregon HB 2748 (2025) Post-Mortem
+const PERSONHOOD_QUERY = `
+  (
+    (
+      ("artificial intelligence" OR AI OR "AI system" OR "AI systems" OR "AI agent" OR "autonomous agent" OR "autonomous system")
+      AND
+      (personhood OR "legal person" OR "legal persons" OR "legal personhood" OR "legal personality" OR "electronic person" OR "digital person" OR "juridical person" OR "juristic person")
+    )
+    OR
+    (
+      (nonhuman OR "non-human" OR "non human" OR "nonhuman entity" OR "non-human entity" OR "non human entity")
+      AND
+      (title OR titles OR "professional title" OR license OR licensed OR licensure OR registered OR certified OR credentialed OR nurse OR nursing OR physician)
+    )
+  )
+  AND NOT
+  (
+    unborn OR fetus OR foetus OR embryo OR zygote OR preborn OR "pre-born" OR "in utero" OR pregnancy OR conception OR fertilization OR fertilisation OR "assisted reproductive" OR "assisted reproduction" OR abortion OR miscarriage
+  )
+`.replace(/\s+/g, ' ').trim();
 const SEARCH_YEAR = "2"; // LegiScan: 1=all, 2=current year, 3=recent, 4=prior
 
 const CATEGORY_KEYS = {
