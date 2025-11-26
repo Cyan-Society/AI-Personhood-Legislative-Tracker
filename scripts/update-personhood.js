@@ -15,8 +15,6 @@
 
 const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
-const { applyMigrations, getDb, resolveDbPath } = require("./db");
 
 // Lightweight .env loader (avoids external deps)
 (function loadDotenv() {
@@ -45,9 +43,6 @@ const STATE_DATA_PATH = path.join(DATA_DIR, "state-legislation.json");
 const HISTORY_PATH = path.join(DATA_DIR, "legiscan-personhood-history.json");
 const RUN_REPORT_JSON = path.join(DATA_DIR, "run-report.json");
 const RUN_REPORT_MD = path.join(DATA_DIR, "run-report.md");
-const DEFAULT_EXPORT_PATH = process.env.LITESQL_EXPORT_PATH
-  ? path.resolve(__dirname, "..", process.env.LITESQL_EXPORT_PATH)
-  : STATE_DATA_PATH;
 
 // TIER 1 Combined Query: Captures explicit AI personhood AND implicit "nonhuman" professional restrictions.
 // Source: Internal Analysis / Oregon HB 2748 (2025) Post-Mortem
@@ -111,132 +106,6 @@ function loadJson(filePath, fallback = {}) {
 
 function saveJson(filePath, data) {
   fs.writeFileSync(filePath, `${JSON.stringify(data, null, 2)}\n`, "utf8");
-}
-
-function checksum(content) {
-  return crypto.createHash("sha256").update(content).digest("hex");
-}
-
-function loadHistoryFromDb(db) {
-  const rows = db.prepare("SELECT bill_id, change_hash FROM raw_bills").all();
-  if (!rows.length) return null;
-  const map = {};
-  rows.forEach((row) => {
-    map[row.bill_id] = { change_hash: row.change_hash };
-  });
-  return map;
-}
-
-function loadStateFromDb(db) {
-  const rows = db
-    .prepare(
-      `SELECT ss.state_code, ss.category, ss.summary, ss.citation, ss.source_url
-       FROM state_snapshots ss
-       JOIN (
-         SELECT state_code, MAX(id) AS latest_id
-         FROM state_snapshots
-         WHERE published_flag = 1
-         GROUP BY state_code
-       ) latest ON latest.latest_id = ss.id`
-    )
-    .all();
-  if (!rows.length) return null;
-  return rows
-    .sort((a, b) => a.state_code.localeCompare(b.state_code))
-    .reduce((acc, row) => {
-      acc[stateToGeoId(row.state_code)] = {
-        category: row.category,
-        summary: row.summary,
-        source: row.source_url || row.citation || "",
-        citation: row.citation || row.source_url || ""
-      };
-      return acc;
-    }, {});
-}
-
-function createRun(db, startedAt) {
-  const stmt = db.prepare(
-    "INSERT INTO runs (started_at, search_query, gemini_model, force_review_flag, notes) VALUES (?, ?, ?, ?, ?)"
-  );
-  const result = stmt.run(startedAt, PERSONHOOD_QUERY, GEMINI_MODEL, FORCE_REVIEW ? 1 : 0, "automation run");
-  return result.lastInsertRowid;
-}
-
-function completeRun(db, runId, completedAt) {
-  db.prepare("UPDATE runs SET completed_at = ? WHERE id = ?").run(completedAt, runId);
-}
-
-function recordRawBill(db, runId, bill, payload) {
-  const stmt = db.prepare(
-    "INSERT INTO raw_bills (run_id, bill_id, state, change_hash, payload_json, fetched_at) VALUES (?, ?, ?, ?, ?, ?)"
-  );
-  const result = stmt.run(
-    runId,
-    bill.bill_id,
-    bill.state,
-    bill.change_hash || payload?.change_hash || "",
-    JSON.stringify(payload || bill),
-    new Date().toISOString()
-  );
-  return result.lastInsertRowid;
-}
-
-function recordClassification(db, runId, rawBillId, detail, decision) {
-  const stmt = db.prepare(
-    "INSERT INTO classifications (run_id, raw_bill_id, category, summary, rationale, citation, source_url, relevance_flag, reviewer, reviewed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-  );
-  const citation = deriveCitation(detail);
-  const summaryText =
-    decision.summary || `${detail.bill_number} (${detail.status_date?.slice(0, 4) || "Unknown"}): ${detail.title}`;
-  const result = stmt.run(
-    runId,
-    rawBillId,
-    decision.category,
-    summaryText,
-    decision.reason || "",
-    citation,
-    detail.url,
-    decision.relevant ? 1 : 0,
-    "automation",
-    new Date().toISOString()
-  );
-  return { classificationId: result.lastInsertRowid, summaryText, citation };
-}
-
-function persistSnapshots(db, runId, merged, stateBillLinks) {
-  const deactivate = db.prepare("UPDATE state_snapshots SET published_flag = 0 WHERE published_flag = 1");
-  const insertSnapshot = db.prepare(
-    "INSERT INTO state_snapshots (run_id, state_code, category, summary, citation, source_url, published_flag) VALUES (?, ?, ?, ?, ?, ?, 1)"
-  );
-  const insertLink = db.prepare("INSERT INTO state_snapshot_bills (state_snapshot_id, raw_bill_id) VALUES (?, ?)");
-
-  db.transaction(() => {
-    deactivate.run();
-    Object.entries(merged).forEach(([geoId, value]) => {
-      const stateCode = geoId.replace("US-", "");
-      const snapshotId = insertSnapshot.run(
-        runId,
-        stateCode,
-        value.category,
-        value.summary,
-        value.citation,
-        value.source
-      ).lastInsertRowid;
-      const links = stateBillLinks[stateCode] || [];
-      links.forEach((rawId) => insertLink.run(snapshotId, rawId));
-    });
-  })();
-}
-
-function exportFromLiteSql(db, runId, payload, exportPath = DEFAULT_EXPORT_PATH) {
-  saveJson(exportPath, payload);
-  const content = fs.readFileSync(exportPath, "utf8");
-  const hash = checksum(content);
-  db.prepare("INSERT INTO exports (run_id, export_path, checksum) VALUES (?, ?, ?)").run(
-    runId,
-    path.relative(path.resolve(__dirname, ".."), exportPath),
-    hash
-  );
 }
 
 function requireEnvVars() {
@@ -497,8 +366,6 @@ function saveRunReport(report) {
 
 async function main() {
   requireEnvVars();
-  applyMigrations();
-  const db = getDb();
   const report = {
     started_at: new Date().toISOString(),
     query: PERSONHOOD_QUERY,
@@ -511,15 +378,11 @@ async function main() {
     error_count: 0,
     applied_updates: [],
     skipped: [],
-    errors: [],
-    database: resolveDbPath()
+    errors: []
   };
   const previousHistory = loadJson(HISTORY_PATH, {});
-  const previousMap = loadHistoryFromDb(db) || toHistoryMap(previousHistory);
-  const stateData = loadStateFromDb(db) || loadJson(STATE_DATA_PATH, {});
-  const stateBillLinks = {};
-  const runId = createRun(db, report.started_at);
-  report.run_id = runId;
+  const previousMap = toHistoryMap(previousHistory);
+  const stateData = loadJson(STATE_DATA_PATH, {});
 
   console.log("Pulling LegiScan search results...");
   const searchResults = await getLegiscanSearchResults();
@@ -530,7 +393,6 @@ async function main() {
   report.changed_considered = changed.length;
   if (!changed.length) {
     console.log("No new or changed results since last run.");
-    completeRun(db, runId, new Date().toISOString());
     saveRunReport(report);
     return;
   }
@@ -541,10 +403,7 @@ async function main() {
   for (const bill of changed) {
     try {
       const detail = await getBillDetails(bill.bill_id);
-      const rawBillId = recordRawBill(db, bill, detail);
       const decision = await classifyWithGemini(detail);
-      const { summaryText, citation } = recordClassification(db, runId, rawBillId, detail, decision);
-
       if (!decision.relevant) {
         console.log(`Skipping ${detail.state} ${detail.bill_number}: not AI-personhood (${decision.reason})`);
         report.skipped.push({
@@ -555,6 +414,12 @@ async function main() {
         continue;
       }
 
+      const summaryText =
+        decision.summary ||
+        `${detail.bill_number} (${detail.status_date?.slice(0, 4) || "Unknown"}): ${detail.title}`;
+
+      const citation = deriveCitation(detail);
+
       updates.push({
         state: detail.state,
         category: decision.category,
@@ -562,9 +427,6 @@ async function main() {
         source: detail.url,
         citation
       });
-
-      if (!stateBillLinks[detail.state]) stateBillLinks[detail.state] = [];
-      stateBillLinks[detail.state].push(rawBillId);
 
       report.applied_updates.push({
         state: detail.state,
@@ -582,16 +444,12 @@ async function main() {
     }
   }
 
-  const hasExistingState = Object.keys(stateData).length > 0;
-  if (!updates.length && hasExistingState) {
+  if (!updates.length) {
     console.log("No relevant AI personhood updates to apply.");
   } else {
     const merged = mergeStateData(stateData, updates);
-    persistSnapshots(db, runId, merged, stateBillLinks);
-    exportFromLiteSql(db, runId, merged, DEFAULT_EXPORT_PATH);
-    console.log(
-      `Published ${Object.keys(merged).length} state snapshots to LiteSQL and exported JSON to ${DEFAULT_EXPORT_PATH}`
-    );
+    saveJson(STATE_DATA_PATH, merged);
+    console.log(`Updated ${STATE_DATA_PATH}`);
   }
 
   report.applied_count = report.applied_updates.length;
@@ -623,9 +481,6 @@ async function main() {
 
   saveJson(HISTORY_PATH, historyPayload);
   console.log(`Saved history to ${HISTORY_PATH}`);
-
-  completeRun(db, runId, new Date().toISOString());
-  console.log(`LiteSQL database updated at ${resolveDbPath()}`);
 }
 
 main().catch((err) => {
