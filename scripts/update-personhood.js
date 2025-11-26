@@ -587,6 +587,20 @@ async function main() {
     console.log("No relevant AI personhood updates to apply.");
   } else {
     const merged = mergeStateData(stateData, updates);
+
+    // Ensure all states are present in the output, especially on the first run.
+    STATE_ABBRS.forEach(stateCode => {
+      const geoId = stateToGeoId(stateCode);
+      if (!merged[geoId]) {
+        merged[geoId] = {
+          category: "NO_SPECIFIC_ACTION",
+          summary: "No specific state-level action mentioned in the 2025 report.",
+          source: "Report",
+          citation: "Report"
+        };
+      }
+    });
+
     persistSnapshots(db, runId, merged, stateBillLinks);
     exportFromLiteSql(db, runId, merged, DEFAULT_EXPORT_PATH);
     console.log(
