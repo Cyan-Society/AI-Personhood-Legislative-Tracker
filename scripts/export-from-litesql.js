@@ -59,7 +59,7 @@ function exportJson() {
   const content = fs.readFileSync(exportPath, "utf8");
   const hash = checksum(content);
 
-  const runId = snapshots[0].run_id;
+  const runId = Math.max(...snapshots.map(s => s.run_id));
   db.prepare("INSERT INTO exports (run_id, export_path, checksum) VALUES (?, ?, ?)").run(
     runId,
     path.relative(path.resolve(__dirname, ".."), exportPath),
