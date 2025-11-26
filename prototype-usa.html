@@ -146,6 +146,13 @@
       };
       const defaultFill = categories.NO_SPECIFIC_ACTION.color;
 
+      // Prefer API-driven JSON during rollout, fallback to bundled file
+      const dataConfig = {
+        useApi: true,
+        apiUrl: "api/state-legislation.json",
+        fallbackUrl: "data/state-legislation.json"
+      };
+
       // Inline fallback data (used if fetch fails)
       const fallbackStateData = {
         "US-UT": {
@@ -195,14 +202,27 @@
       };
 
       async function loadStateData() {
-        try {
-          const response = await fetch("data/state-legislation.json", { cache: "no-cache" });
-          if (!response.ok) throw new Error("Failed to fetch state data");
-          return await response.json();
-        } catch (err) {
-          console.warn("Using fallback state data", err);
-          return fallbackStateData;
+        const urls = [];
+        if (dataConfig.useApi) urls.push(dataConfig.apiUrl);
+        urls.push(dataConfig.fallbackUrl || "data/state-legislation.json");
+
+        for (let i = 0; i < urls.length; i += 1) {
+          const url = urls[i];
+          try {
+            const response = await fetch(url, { cache: "no-cache" });
+            if (!response.ok) throw new Error(`Failed to fetch state data from ${url}`);
+            const payload = await response.json();
+            if (url !== dataConfig.fallbackUrl) {
+              console.log(`Loaded state data from ${url}`);
+            }
+            return payload;
+          } catch (err) {
+            console.warn(`State data fetch failed for ${url}`, err);
+          }
         }
+
+        console.warn("Using bundled fallback state data");
+        return fallbackStateData;
       }
 
       function buildPolygonData(stateData) {
