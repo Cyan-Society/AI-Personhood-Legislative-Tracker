@@ -50,7 +50,7 @@
 - **Export parity:** Compare generated `state-legislation.json` from LiteSQL exports against the legacy JSON to confirm categories, summaries, and citations are unchanged during rollout.
 
 ## Team & Execution Plan
-- **Team sizing:** 2 focused teams are sufficient—one for data/storage and one for application integration. A third (part-time) observability/QA role can be shared across teams.
+- **Team sizing:** 2 focused teams are sufficient—one for data/storage and one for application integration. A shared, part-time observability/QA role will support both teams.
 - **Parallelizable tracks:**
   - **Track A — Data & migrations (Team 1):** Steps 1–2 (schema/migrations, backfill) and the database-facing portions of Step 3 (LiteSQL writes) can start immediately. Continues into Step 4 to expose an export job/API backed by the new tables.
   - **Track B — App integration (Team 2):** In parallel with Track A, begins on the frontend toggle in Step 5 and coordinates with automation updates in Step 3 to switch ingestion to LiteSQL outputs once the schema stabilizes. Owns final cutover tasks in Phase 3.
