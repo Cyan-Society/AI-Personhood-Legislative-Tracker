@@ -41,7 +41,7 @@
 
 ## Rollback & Recovery
 - Keep the backfilled JSON exports under `data/` for at least one release so the map can be pinned to a known-good snapshot if the LiteSQL service fails.
-- Document a one-command rollback: restore the previous `data/state-legislation.json` and `data/legiscan-personhood-history.json` from Git, disable the LiteSQL feature flag, and rerun `python -m http.server 8000` to serve the static map.
+- Document a one-command rollback: restore the previous `data/state-legislation.json` and `data/legiscan-personhood-history.json` from Git, disable the LiteSQL feature flag, and rerun `npx serve .` to serve the static map.
 - Store migration files in Git so a failed deploy can roll back to the prior DB schema; include a `down` migration per `up` change where LiteSQL supports it.
 
 ## Testing Strategy
