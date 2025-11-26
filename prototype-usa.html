@@ -206,8 +206,7 @@
         if (dataConfig.useApi) urls.push(dataConfig.apiUrl);
         urls.push(dataConfig.fallbackUrl || "data/state-legislation.json");
 
-        for (let i = 0; i < urls.length; i += 1) {
-          const url = urls[i];
+        for (const url of urls) {
           try {
             const response = await fetch(url, { cache: "no-cache" });
             if (!response.ok) throw new Error(`Failed to fetch state data from ${url}`);
