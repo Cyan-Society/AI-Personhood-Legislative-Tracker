@@ -92,6 +92,11 @@ function backfill() {
     const stateBillLinks = {};
     applied.forEach((item) => {
       const rawBillId = billIndex.get(`${item.state}:${item.bill_number}`) || null;
+      if (!rawBillId) {
+        // Cannot insert a classification without a link to a raw bill.
+        // This can happen if run-report.json has entries not in legiscan-personhood-history.json
+        return;
+      }
       insertClassification.run(
         runId,
         rawBillId,
@@ -104,7 +109,6 @@ function backfill() {
         "migration",
         runReport.started_at || startedAt
       );
-      if (!rawBillId) return;
       if (!stateBillLinks[item.state]) stateBillLinks[item.state] = [];
       stateBillLinks[item.state].push(rawBillId);
     });
