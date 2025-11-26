@@ -19,7 +19,7 @@
 ## Proposed Schema (initial)
 - `runs` — id, started_at, completed_at, search_query, gemini_model, force_review_flag, notes.
 - `raw_bills` — id, run_id (FK), bill_id, state, change_hash, payload_json (LegiScan response), fetched_at.
-- `classifications` — id, run_id (FK), bill_id (FK to raw_bills), category, summary, rationale, citation, source_url, relevance_flag, reviewer, reviewed_at.
+- `classifications` — id, run_id (FK), raw_bill_id (FK to raw_bills.id), category, summary, rationale, citation, source_url, relevance_flag, reviewer, reviewed_at.
 - `state_snapshots` — id, run_id (FK), state_code, category, summary, citation, source_url, derived_from_bill_ids (JSON array), published_flag.
 - `exports` — id, run_id (FK), export_path, checksum, created_at (tracks JSON exports served to the frontend).
 
