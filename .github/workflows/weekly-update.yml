@@ -1,0 +1,60 @@
+name: Weekly Data Update
+
+on:
+  schedule:
+    # Runs at 00:00 UTC every Sunday
+    - cron: '0 0 * * 0'
+  workflow_dispatch: # Allows manual triggering from GitHub UI
+
+jobs:
+  update-legislation:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to push changes back to the repo
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Update Script
+        env:
+          LEGISCAN_API_KEY: ${{ secrets.LEGISCAN_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # Force a lightweight DB location for the runner
+          LITESQL_URL: ./data/personhood.db
+        run: |
+          # Ensure migrations are applied (creates the DB file since it's not in git)
+          npm run migrate
+          # Backfill is not strictly needed if the script loads history from JSON fallbacks,
+          # but running it ensures the DB state matches the repo's JSON history before updating.
+          npm run backfill:litesql
+          # Run the main update logic
+          npm run update
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Stage specific files we want to "back up"
+          git add data/state-legislation.json
+          git add data/legiscan-personhood-history.json
+          git add data/run-report.md
+          git add data/run-report.json
+          
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore: weekly legislative data update [skip ci]"
+            git push
+          fi
