@@ -33,7 +33,7 @@ const {
 // Resolve a 1Password op:// secret reference via the CLI
 function resolveOpSecret(ref) {
   try {
-    return execSync(`/usr/bin/op read "${ref}"`, {
+    return execSync(`op read "${ref}"`, {
       encoding: "utf8",
       timeout: 10000,
       env: { ...process.env },
@@ -41,7 +41,7 @@ function resolveOpSecret(ref) {
   } catch (err) {
     throw new Error(
       `Failed to resolve 1Password secret: ${ref}\n` +
-      `Ensure /usr/bin/op is available and OP_SERVICE_ACCOUNT_TOKEN is set.\n` +
+      `Ensure 'op' CLI is available in PATH and OP_SERVICE_ACCOUNT_TOKEN is set.\n` +
       `Original error: ${err.message}`
     );
   }
