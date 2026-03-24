@@ -16,6 +16,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const { execSync } = require("child_process");
 const { applyMigrations, getDb, resolveDbPath } = require("./db");
 const {
   CATEGORY_KEYS,
@@ -29,7 +30,24 @@ const {
   mergeStateData
 } = require("./lib/personhood-logic");
 
-// Lightweight .env loader (avoids external deps)
+// Resolve a 1Password op:// secret reference via the CLI
+function resolveOpSecret(ref) {
+  try {
+    return execSync(`/usr/bin/op read "${ref}"`, {
+      encoding: "utf8",
+      timeout: 10000,
+      env: { ...process.env },
+    }).trim();
+  } catch (err) {
+    throw new Error(
+      `Failed to resolve 1Password secret: ${ref}\n` +
+      `Ensure /usr/bin/op is available and OP_SERVICE_ACCOUNT_TOKEN is set.\n` +
+      `Original error: ${err.message}`
+    );
+  }
+}
+
+// Lightweight .env loader with op:// secret resolution (avoids external deps)
 (function loadDotenv() {
   const envPath = path.resolve(__dirname, "..", ".env");
   if (!fs.existsSync(envPath)) return;
@@ -40,8 +58,10 @@ const {
     const eq = trimmed.indexOf("=");
     if (eq === -1) return;
     const key = trimmed.slice(0, eq).trim();
-    const val = trimmed.slice(eq + 1).trim();
-    if (key && !process.env[key]) process.env[key] = val;
+    let val = trimmed.slice(eq + 1).trim();
+    if (!key || process.env[key]) return;
+    if (val.startsWith("op://")) val = resolveOpSecret(val);
+    process.env[key] = val;
   });
 })();
 
@@ -453,7 +473,7 @@ async function main() {
   for (const bill of changed) {
     try {
       const detail = await getBillDetails(bill.bill_id);
-      const rawBillId = recordRawBill(db, bill, detail);
+      const rawBillId = recordRawBill(db, runId, bill, detail);
       const decision = await classifyWithGemini(detail);
       const { summaryText, citation } = recordClassification(db, runId, rawBillId, detail, decision);
 
