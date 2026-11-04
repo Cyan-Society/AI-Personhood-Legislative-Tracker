@@ -51,8 +51,11 @@ function parseClassification(response) {
       .map((part) => part.text)
       .join("") || "";
   const parsed = JSON.parse(extractJson(rawText));
+  if (typeof parsed.relevant !== "boolean") {
+    throw new Error(`Gemini reply must set relevant to true or false, got ${JSON.stringify(parsed.relevant)}`);
+  }
   return {
-    relevant: Boolean(parsed.relevant),
+    relevant: parsed.relevant,
     category: normalizeCategory(parsed.category),
     summary: parsed.summary || "",
     reason: parsed.reason || ""

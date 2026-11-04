@@ -58,6 +58,11 @@ describe("Gemini helpers", () => {
     test("should throw when there is no JSON", () => {
       assert.throws(() => parseClassification(modelReply("no idea")));
     });
+
+    test("should reject a relevant value that is not a boolean", () => {
+      assert.throws(() => parseClassification(modelReply('{"relevant": "false"}')), /true or false/);
+      assert.throws(() => parseClassification(modelReply('{"category": "pending"}')), /true or false/);
+    });
   });
 
   describe("buildBatchBody", () => {

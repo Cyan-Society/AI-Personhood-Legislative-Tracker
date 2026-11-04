@@ -81,9 +81,11 @@ const GEMINI_BASE = process.env.GEMINI_API_BASE || "https://generativelanguage.g
 const GEMINI_THINKING_LEVEL = process.env.GEMINI_THINKING_LEVEL ?? "HIGH";
 // Batch API: half price, asynchronous (24-hour target, usually much faster).
 const GEMINI_USE_BATCH = !["0", "false", "no"].includes(String(process.env.GEMINI_BATCH ?? "1").toLowerCase());
-const GEMINI_BATCH_POLL_SECONDS = Number(process.env.GEMINI_BATCH_POLL_SECONDS) || 30;
+const GEMINI_BATCH_POLL_SECONDS = Math.max(5, Number(process.env.GEMINI_BATCH_POLL_SECONDS) || 30);
 // Stays under GitHub Actions' 6-hour job limit.
-const GEMINI_BATCH_MAX_WAIT_MINUTES = Number(process.env.GEMINI_BATCH_MAX_WAIT_MINUTES) || 300;
+const parsedBatchMaxWait = Number(process.env.GEMINI_BATCH_MAX_WAIT_MINUTES);
+const GEMINI_BATCH_MAX_WAIT_MINUTES =
+  Number.isFinite(parsedBatchMaxWait) && parsedBatchMaxWait > 0 ? parsedBatchMaxWait : 300;
 
 const DATA_DIR = path.resolve(__dirname, "..", "data");
 const STATE_DATA_PATH = path.join(DATA_DIR, "state-legislation.json");
@@ -201,6 +203,11 @@ function recordRawBill(db, runId, bill, payload) {
     new Date().toISOString()
   );
   return result.lastInsertRowid;
+}
+
+// Drops a bill's raw row (and any classification, by cascade) so the next run retries it.
+function forgetRawBill(db, rawBillId) {
+  db.prepare("DELETE FROM raw_bills WHERE id = ?").run(rawBillId);
 }
 
 function recordClassification(db, runId, rawBillId, detail, decision) {
@@ -383,13 +390,23 @@ async function classifyBatchWithGemini(items, displayName) {
   let lastState = status.state;
   while (!status.done) {
     if (Date.now() > deadline) {
-      await geminiRequest(`${name}:cancel`, { method: "POST" }).catch(() => {});
+      const cancelRequested = await geminiRequest(`${name}:cancel`, { method: "POST" }).then(
+        () => true,
+        () => false
+      );
       throw new Error(
-        `Gemini batch ${name} was not finished after ${GEMINI_BATCH_MAX_WAIT_MINUTES} minutes (state ${status.state || "unknown"}); cancelled it`
+        `Gemini batch ${name} was not finished after ${GEMINI_BATCH_MAX_WAIT_MINUTES} minutes (state ${status.state || "unknown"}); ${
+          cancelRequested ? "cancel requested" : "cancel request failed, so it may still be running; cancel it manually"
+        }`
       );
     }
     await new Promise((resolve) => setTimeout(resolve, GEMINI_BATCH_POLL_SECONDS * 1000));
-    operation = await geminiRequest(name);
+    try {
+      operation = await geminiRequest(name);
+    } catch (err) {
+      console.warn(`Gemini batch ${name}: status check failed, retrying: ${err.message}`);
+      continue;
+    }
     status = readBatchStatus(operation);
     if (status.state !== lastState) {
       console.log(`Gemini batch ${name}: ${status.state || "pending"}`);
@@ -588,6 +605,7 @@ async function main() {
     } catch (err) {
       console.error(`Failed to process bill ${bill.bill_id}:`, err.message);
       report.errors.push({ bill_id: bill.bill_id, message: err.message });
+      forgetRawBill(db, rawBillId);
     }
   }
 
@@ -608,12 +626,14 @@ async function main() {
   report.error_count = report.errors.length;
   saveRunReport(report);
 
+  // Bills that failed this run stay out of history so the next run retries them.
+  const failedBillIds = new Set(report.errors.map((item) => String(item.bill_id)));
   const historyPayload = {
     last_run: new Date().toISOString(),
     query: PERSONHOOD_QUERY,
     year: SEARCH_YEAR,
     bills: Object.fromEntries(
-      searchResults.map((bill) => [
+      searchResults.filter((bill) => !failedBillIds.has(String(bill.bill_id))).map((bill) => [
         bill.bill_id,
         {
           bill_id: bill.bill_id,

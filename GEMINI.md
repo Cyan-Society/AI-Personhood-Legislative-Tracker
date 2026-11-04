@@ -19,7 +19,7 @@ The AI Personhood Legislative Tracker monitors and visualizes legislation regard
     *   `GEMINI_MODEL` (Optional): Specific model version (default `gemini-3.8-flash`).
     *   `GEMINI_THINKING_LEVEL` (Optional): `LOW`, `MEDIUM` or `HIGH` (default `HIGH`); leave empty for pre-Gemini-3 models.
     *   `GEMINI_BATCH` (Optional): `1` (default) classifies all bills in one Batch API job at half price; `0` makes direct calls.
-    *   `GEMINI_BATCH_POLL_SECONDS` / `GEMINI_BATCH_MAX_WAIT_MINUTES` (Optional): batch polling interval (default 30) and how long to wait before cancelling (default 300).
+    *   `GEMINI_BATCH_POLL_SECONDS` / `GEMINI_BATCH_MAX_WAIT_MINUTES` (Optional): batch polling interval (default 30, minimum 5) and how long to wait before cancelling (default 300).
     *   `FORCE_REVIEW` (Optional): Set to `1` to force re-classification of all data.
 
 3.  **Database Initialization:**
