@@ -9,7 +9,7 @@ Run the automation to update the legislative data:
 1.  **Setup:**
     *   Install Node.js (v18+).
     *   `npm install`
-    *   Copy `.env.example` to `.env` and fill in `LEGISCAN_API_KEY` and `GEMINI_API_KEY`.
+    *   Copy `.env.example` to `.env` and fill in `LEGISCAN_API_KEY` and `GEMINI_API_KEY` (plain values or `op://` references for 1Password CLI).
     *   Run initial database setup: `npm run migrate`
     *   (Optional) Backfill existing data: `npm run backfill:litesql`
 

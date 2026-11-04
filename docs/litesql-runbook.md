@@ -7,7 +7,7 @@
 - Copy `.env.example` to `.env` and set:
   - `LITESQL_URL` (file path for the LiteSQL database, defaults to `./data/personhood.db`)
   - `LITESQL_EXPORT_PATH` (optional JSON export destination, defaults to `data/state-legislation.json`)
-  - `LEGISCAN_API_KEY`, `GEMINI_API_KEY`, and optional `GEMINI_MODEL` / `FORCE_REVIEW` flags.
+  - `LEGISCAN_API_KEY`, `GEMINI_API_KEY`, and optional `GEMINI_MODEL` / `GEMINI_THINKING_LEVEL` / `GEMINI_BATCH` / `FORCE_REVIEW` flags.
 
 ## One-time Backfill
 Populate LiteSQL using the existing JSON artifacts before enabling automated runs:
