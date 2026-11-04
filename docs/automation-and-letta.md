@@ -1,8 +1,8 @@
 # AI Personhood Choropleth Automation
 
 - **Search query:** `personhood AND ("artificial intelligence" OR AI OR artificial OR computational OR digital)` (LegiScan `getSearch`, year=2 current year). Operators follow the LegiScan fulltext syntax (see https://legiscan.com/fulltext-search).
-- **Model/filter:** Gemini default `gemini-2.5-pro` (override with `GEMINI_MODEL`). Gemini classifies relevance, category, and summary.
-- **Env vars:** `LEGISCAN_API_KEY`, `GEMINI_API_KEY` (optional overrides: `GEMINI_MODEL`, `GEMINI_API_BASE`, `FORCE_REVIEW=1` to reprocess all results).
+- **Model/filter:** Gemini default `gemini-3.8-flash` with thinking level `HIGH` (override with `GEMINI_MODEL` / `GEMINI_THINKING_LEVEL`), sent as one Batch API job per run (`GEMINI_BATCH=0` for direct calls). Gemini classifies relevance, category, and summary.
+- **Env vars:** `LEGISCAN_API_KEY`, `GEMINI_API_KEY` (optional overrides: `GEMINI_MODEL`, `GEMINI_THINKING_LEVEL`, `GEMINI_BATCH`, `GEMINI_BATCH_POLL_SECONDS`, `GEMINI_BATCH_MAX_WAIT_MINUTES`, `GEMINI_API_BASE`, `FORCE_REVIEW=1` to reprocess all results).
 - **Run:** `LEGISCAN_API_KEY=… GEMINI_API_KEY=… node scripts/update-personhood.js`
   - Use `FORCE_REVIEW=1` to reclassify everything after query/model changes.
 - **Outputs:** `data/state-legislation.json` (map source, now includes `source` + `citation` link per state), `data/legiscan-personhood-history.json` (diff baseline), `data/run-report.json` + `data/run-report.md` (per-run summary for Letta/humans). Map fetches `data/state-legislation.json` with inline fallback in `prototype-usa.html`; tooltips show the full summary and hyperlink the citation when it is a URL.

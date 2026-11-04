@@ -5,7 +5,8 @@
  * Steps:
  * 1) Pull LegiScan search results for "personhood" across all states.
  * 2) Diff against the prior run to isolate new/changed bills.
- * 3) Use Gemini to filter for AI-personhood context and assign a category.
+ * 3) Use Gemini to filter for AI-personhood context and assign a category
+ *    (one Batch API job per run by default; GEMINI_BATCH=0 for direct calls).
  * 4) Merge relevant updates into data/state-legislation.json without clobbering unchanged states.
  *
  * Requirements:
@@ -23,12 +24,18 @@ const {
   CATEGORY_PRIORITY,
   STATE_ABBRS,
   stateToGeoId,
-  normalizeCategory,
-  extractJson,
   diffResults,
   parsePageCount,
   mergeStateData
 } = require("./lib/personhood-logic");
+const {
+  buildClassificationPrompt,
+  buildGenerateContentRequest,
+  parseClassification,
+  buildBatchBody,
+  readBatchStatus,
+  readBatchResults
+} = require("./lib/gemini");
 
 // Resolve a 1Password op:// secret reference via the CLI
 function resolveOpSecret(ref) {
@@ -68,8 +75,15 @@ function resolveOpSecret(ref) {
 const LEGISCAN_API_KEY = process.env.LEGISCAN_API_KEY || process.env.LEGISCAN_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 const FORCE_REVIEW = ["1", "true", "yes"].includes(String(process.env.FORCE_REVIEW || "").toLowerCase());
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-pro";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 const GEMINI_BASE = process.env.GEMINI_API_BASE || "https://generativelanguage.googleapis.com";
+// Gemini 3+ only; set GEMINI_THINKING_LEVEL to an empty value when using an older model.
+const GEMINI_THINKING_LEVEL = process.env.GEMINI_THINKING_LEVEL ?? "HIGH";
+// Batch API: half price, asynchronous (24-hour target, usually much faster).
+const GEMINI_USE_BATCH = !["0", "false", "no"].includes(String(process.env.GEMINI_BATCH ?? "1").toLowerCase());
+const GEMINI_BATCH_POLL_SECONDS = Number(process.env.GEMINI_BATCH_POLL_SECONDS) || 30;
+// Stays under GitHub Actions' 6-hour job limit.
+const GEMINI_BATCH_MAX_WAIT_MINUTES = Number(process.env.GEMINI_BATCH_MAX_WAIT_MINUTES) || 300;
 
 const DATA_DIR = path.resolve(__dirname, "..", "data");
 const STATE_DATA_PATH = path.join(DATA_DIR, "state-legislation.json");
@@ -321,59 +335,83 @@ async function getBillDetails(billId) {
   return payload.bill;
 }
 
-async function classifyWithGemini(bill) {
-  const prompt = [
-    "Classify this bill for AI personhood tracking.",
-    "Return a compact JSON object with keys:",
-    "relevant (boolean),",
-    "category (one of ENACTED_ANTI_PERSONHOOD, FUNCTIONAL_REGULATION, PENDING_LEGISLATION, FAILED_ATTEMPTS, NO_SPECIFIC_ACTION),",
-    "summary (one-sentence plain text),",
-    "reason (short).",
-    "",
-    "Relevant bills must discuss artificial intelligence personhood (granting or denying legal personhood, sentience, or human-equivalent rights/duties) or functionally regulate AI in ways that implicitly settle personhood (e.g., restricting licensed titles to humans).",
-    "Ignore biological/abortion personhood bills.",
-    "",
-    `Bill data: ${JSON.stringify({
-      state: bill.state,
-      bill_number: bill.bill_number,
-      title: bill.title,
-      description: bill.description,
-      status: bill.status,
-      status_date: bill.status_date,
-      completed: bill.completed,
-      last_action: bill.history?.[bill.history.length - 1]?.action || "",
-      url: bill.url
-    })}`
-  ].join("\n");
-
-  const body = {
-    contents: [{ parts: [{ text: prompt }] }]
-  };
-
-  const res = await fetch(
-    `${GEMINI_BASE}/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
-    }
-  );
+async function geminiRequest(resource, { method = "GET", body } = {}) {
+  const res = await fetch(`${GEMINI_BASE}/v1beta/${resource}`, {
+    method,
+    headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY },
+    body: body ? JSON.stringify(body) : undefined
+  });
 
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Gemini request failed (${res.status}): ${text}`);
   }
 
-  const data = await res.json();
-  const rawText = data.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") || "";
-  const jsonText = extractJson(rawText);
-  const parsed = JSON.parse(jsonText);
-  return {
-    relevant: Boolean(parsed.relevant),
-    category: normalizeCategory(parsed.category),
-    summary: parsed.summary || "",
-    reason: parsed.reason || ""
-  };
+  return res.json();
+}
+
+function buildClassificationRequest(bill) {
+  return buildGenerateContentRequest(buildClassificationPrompt(bill), GEMINI_THINKING_LEVEL);
+}
+
+async function classifyWithGemini(bill) {
+  const data = await geminiRequest(`models/${GEMINI_MODEL}:generateContent`, {
+    method: "POST",
+    body: buildClassificationRequest(bill)
+  });
+  return parseClassification(data);
+}
+
+// Classifies every bill in one Batch API job. Returns Map(key -> { decision } | { error }).
+// Throws if the job fails, is cancelled or expires, or runs past GEMINI_BATCH_MAX_WAIT_MINUTES.
+async function classifyBatchWithGemini(items, displayName) {
+  const body = buildBatchBody(
+    items.map(({ key, bill }) => ({ key, request: buildClassificationRequest(bill) })),
+    displayName
+  );
+  let operation = await geminiRequest(`models/${GEMINI_MODEL}:batchGenerateContent`, { method: "POST", body });
+  const name = operation.name;
+  console.log(`Submitted Gemini batch ${name} with ${items.length} request(s); waiting for results...`);
+
+  const deadline = Date.now() + GEMINI_BATCH_MAX_WAIT_MINUTES * 60 * 1000;
+  let status = readBatchStatus(operation);
+  let lastState = status.state;
+  while (!status.done) {
+    if (Date.now() > deadline) {
+      await geminiRequest(`${name}:cancel`, { method: "POST" }).catch(() => {});
+      throw new Error(
+        `Gemini batch ${name} was not finished after ${GEMINI_BATCH_MAX_WAIT_MINUTES} minutes (state ${status.state || "unknown"}); cancelled it`
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, GEMINI_BATCH_POLL_SECONDS * 1000));
+    operation = await geminiRequest(name);
+    status = readBatchStatus(operation);
+    if (status.state !== lastState) {
+      console.log(`Gemini batch ${name}: ${status.state || "pending"}`);
+      lastState = status.state;
+    }
+  }
+
+  if (!status.succeeded) {
+    throw new Error(
+      `Gemini batch ${name} ended in ${status.state || "an unknown state"}: ${JSON.stringify(operation.error || {})}`
+    );
+  }
+
+  const results = new Map();
+  readBatchResults(operation).forEach((item) => {
+    const key = item.key ?? items[item.index]?.key;
+    if (item.error) {
+      results.set(key, { error: new Error(`Gemini batch request failed: ${item.error.message || JSON.stringify(item.error)}`) });
+      return;
+    }
+    try {
+      results.set(key, { decision: parseClassification(item.response) });
+    } catch (err) {
+      results.set(key, { error: err });
+    }
+  });
+  return results;
 }
 
 function deriveCitation(detail) {
@@ -435,6 +473,8 @@ async function main() {
     started_at: new Date().toISOString(),
     query: PERSONHOOD_QUERY,
     model: GEMINI_MODEL,
+    thinking_level: GEMINI_THINKING_LEVEL || null,
+    gemini_batch: GEMINI_USE_BATCH,
     force_review: FORCE_REVIEW,
     search_total: 0,
     changed_considered: 0,
@@ -470,11 +510,43 @@ async function main() {
   console.log(`Processing ${changed.length} ${FORCE_REVIEW ? "bill(s) (force review)" : "new/updated bills"}...`);
   const updates = [];
 
+  // 1) Fetch bill details and store the raw payloads.
+  const fetched = [];
   for (const bill of changed) {
     try {
       const detail = await getBillDetails(bill.bill_id);
       const rawBillId = recordRawBill(db, runId, bill, detail);
-      const decision = await classifyWithGemini(detail);
+      fetched.push({ key: String(bill.bill_id), bill, detail, rawBillId });
+    } catch (err) {
+      console.error(`Failed to fetch bill ${bill.bill_id}:`, err.message);
+      report.errors.push({ bill_id: bill.bill_id, message: err.message });
+    }
+  }
+
+  // 2) Classify: one Batch API job, or one direct call per bill.
+  let results = new Map();
+  if (GEMINI_USE_BATCH && fetched.length) {
+    results = await classifyBatchWithGemini(
+      fetched.map(({ key, detail }) => ({ key, bill: detail })),
+      `ai-personhood-${report.started_at}`
+    );
+  } else {
+    for (const { key, detail } of fetched) {
+      try {
+        results.set(key, { decision: await classifyWithGemini(detail) });
+      } catch (err) {
+        results.set(key, { error: err });
+      }
+    }
+  }
+
+  // 3) Record classifications and queue map updates.
+  for (const { key, bill, detail, rawBillId } of fetched) {
+    try {
+      const result = results.get(key);
+      if (!result) throw new Error("No Gemini result returned for this bill");
+      if (result.error) throw result.error;
+      const decision = result.decision;
       const { summaryText, citation } = recordClassification(db, runId, rawBillId, detail, decision);
 
       if (!decision.relevant) {
