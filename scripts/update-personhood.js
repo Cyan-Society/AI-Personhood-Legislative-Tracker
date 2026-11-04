@@ -17,7 +17,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const { execSync } = require("child_process");
+const { execFileSync } = require("child_process");
 const { applyMigrations, getDb, resolveDbPath } = require("./db");
 const {
   CATEGORY_KEYS,
@@ -40,7 +40,7 @@ const {
 // Resolve a 1Password op:// secret reference via the CLI
 function resolveOpSecret(ref) {
   try {
-    return execSync(`op read "${ref}"`, {
+    return execFileSync("op", ["read", ref], {
       encoding: "utf8",
       timeout: 10000,
       env: { ...process.env },
@@ -135,7 +135,12 @@ function checksum(content) {
 }
 
 function loadHistoryFromDb(db) {
-  const rows = db.prepare("SELECT bill_id, change_hash FROM raw_bills").all();
+  const rows = db.prepare(
+    `SELECT raw_bills.bill_id, raw_bills.change_hash
+     FROM raw_bills
+     JOIN runs ON runs.id = raw_bills.run_id
+     WHERE runs.completed_at IS NOT NULL`
+  ).all();
   if (!rows.length) return null;
   const map = {};
   rows.forEach((row) => {
